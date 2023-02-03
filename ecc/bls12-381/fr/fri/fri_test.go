@@ -108,6 +108,7 @@ func TestFRI(t *testing.T) {
 			p := randomPolynomial(uint64(size), m)
 
 			pos := uint64(m % int32(size))
+			println(pos)
 			pp, _ := s.BuildProofOfProximity(p)
 
 			openingProof, err := s.Open(p, uint64(pos))
@@ -237,4 +238,36 @@ func BenchmarkProximityVerification(b *testing.B) {
 		})
 
 	}
+}
+
+func BenchmarkFRI(b *testing.B) {
+	size := 2 << 26
+	_s := RADIX_2_FRI.New(uint64(size), sha256.New())
+			s := _s.(radixTwoFri)
+
+			p := randomPolynomial(uint64(size), 64)
+
+			pos := uint64(123)
+			var pp ProofOfProximity
+			b.Run(fmt.Sprint("proof of proximity"), func(b *testing.B) {
+				pp, _ = s.BuildProofOfProximity(p)
+			})
+			var openingProof OpeningProof
+			var err error
+			b.Run(fmt.Sprint("opening"), func(b *testing.B) {
+			openingProof, err = s.Open(p, uint64(pos))
+			})
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			// check the Merkle path
+			b.Run(fmt.Sprint("verification of opening"), func(b *testing.B) {
+			err = s.VerifyOpening(uint64(pos), openingProof, pp)
+			})
+
+			if err != nil {
+				b.Fatal("error")
+			}
+
 }
